@@ -38,6 +38,10 @@ Email delivery and automatic admission-system verification are not connected. St
 
 ### Research and support
 
+The student **Overview** includes a connected-circle milestone tracker, progress percentage and deadline flags (red for overdue/due today; yellow within the configured warning window). Dates use Nairobi time. Work awaiting supervisor review is not labelled as a late student submission, and student deadline alerts pause on approved leave.
+
+**My journey** groups milestones in a left-hand sidebar with actual programme week ranges. Each stage has Tasks, Resources, Meetings and Submissions sections. On mobile, a milestone selector replaces the sidebar. **Open milestone** retains the full record, comments and earlier academic decisions. Badges include readable status text and size to their contents.
+
 Sign in as the fictional student:
 
 - Email: `student@demo.pac.test`
