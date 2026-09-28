@@ -28,13 +28,23 @@ PostgreSQL and uploaded files use named persistent volumes. To deliberately remo
 
 All roles use the same sign-in address. Their assigned role determines the workspace; staff do not register through the student form.
 
-### New and continuing student registration
+### University-issued login (ERP deferred)
 
-Choose **Create student account** on the sign-in page. Enter admission number, email, programme/cohort, study mode, admission date and a password of 12–72 characters. Select **New student** or **Continuing student**. Registration creates only a self-scoped student account with a submitted enrolment; it does not activate a plan or grant staff access. Sign in to track verification.
+Public student registration is disabled, including the signup API. Students sign in using accounts provisioned by university IT; no ERP or SSO connection is claimed. Missing records are handled by the programme office, not a second student onboarding form. Staff maintenance tools retain verified historical baselines and programme configuration.
 
-The programme office opens **Administration → Open enrolment** to verify the admission and plan start date, or return the record for correction. Continuing students use the same verification process, followed by **Existing-student baseline**: authorized staff record the evidence and historical completion date (or explicitly mark the date unknown). This preserves previous work and unlocks the next eligible milestone.
+For a fictional provisioned newcomer, use `newstudent@demo.pac.test` after applying the optional pitch examples below. Brian has an active part-time plan and a prominent **Choose supervisor** action. Continuing student Amina retains her existing progress. All demo passwords are `Demo123!Change`.
 
-Email delivery and automatic admission-system verification are not connected. Staff must verify the student's identity/admission using the university's existing process before approval. Existing accounts should sign in or contact administration, not register again.
+### Optional pitch examples
+
+After the ordinary seed and current migrations, run `go run ./cmd/pac seed-pitch` with the same DATABASE_URL and UPLOAD_DIR. This explicitly adds fictional tasks, approved/declined concept history, resources, sample submission/discussion records and notifications, and activates the provisioned newcomer example. It is idempotent and does not reset existing submissions or progress. Never run demo seed commands against real university data.
+
+### In-app communication
+
+The notification bell shows unread counts. Notifications and milestone discussions refresh every ten seconds; users can mark notifications read, dismiss them and open linked work. Comments notify the student, current supervisors and authorized staff already participating in the thread. Leave, extension and supervision changes generate in-app alerts; new support replies notify case participants, without putting private narratives in notification titles.
+
+**Follow-ups** provides direct messaging between authorized participants in a student's academic record. Click a next-action owner in a staff report to compose a follow-up, or use the referral section beneath a milestone discussion. Only sender and recipient can read each direct message. Participants can reply from Follow-ups; no email is sent. Arbitrary external recipients and IT/finance email routing are intentionally deferred.
+
+Staff milestones are grouped alphabetically by student with expandable stage lists and completion rings. Staff metrics use restrained urgency colours. Concept cards retain outcome, reviewer and decision time. The supplied horizontal university logo is used at sign-in and in the workspace.
 
 ### Research and support
 
@@ -73,7 +83,7 @@ Other demo accounts use `Demo123!Change`:
 | Examiner | `examiner@demo.pac.test` |
 | Support officer | `support@demo.pac.test` |
 | System administrator | `admin@demo.pac.test` |
-| Pending-verification student | `newstudent@demo.pac.test` |
+| Provisioned new student (after pitch seed) | `newstudent@demo.pac.test` |
 | Approved-leave student | `leave@demo.pac.test` |
 | Defence-stage student | `defence@demo.pac.test` |
 
@@ -108,7 +118,7 @@ docker compose config -q
 
 Install Chromium first with `npx playwright install chromium` in `web`. Set `PAC_BASE_URL` when the running API is not on port 8080. Tests require a migrated, seeded **disposable test database** and mutate its records. Use a fresh seed for each complete browser suite. Do not point these tests at real student data. Backend integration tests are skipped unless `TEST_DATABASE_URL` is supplied.
 
-Coverage includes registration privilege boundaries, verification and continuing-student baselines, distinct supervisor allocation, concurrent reservation capacity, immutable revisions and both-supervisor approval, meetings/actions, leave/extension schedule history, restricted-case access, scoped report variants, reminders, and browser flows for all nine role workspaces, signup, requests, concept feedback, document review and mobile navigation.
+Coverage includes registration privilege boundaries, verification and continuing-student baselines, distinct supervisor allocation, concurrent reservation capacity, immutable revisions and both-supervisor approval, meetings/actions, leave/extension schedule history, restricted-case access, scoped report variants, reminders, and browser flows for all nine role workspaces, provisioned login, requests, concept feedback, document review, notification delivery/read state, direct follow-ups and mobile navigation.
 
 ## Security and policy notes
 
@@ -135,8 +145,12 @@ Coverage includes registration privilege boundaries, verification and continuing
 - Permission-scoped reports, formula-safe CSV export, audit history, file downloads and real scoped dashboard counts.
 - Responsive narrow-screen navigation, keyboard focus, loading/empty/error states, text-labelled status and no colour-only meaning.
 
-The same-origin interface uses the versioned API for persisted state transitions. Registration is student-only; staff account provisioning, temporary-password resets and scoped roles are administered separately. Leave coordinators review requests; HOD/dean/leadership record approval decisions.
+The same-origin interface uses the versioned API for persisted state transitions. Public registration is disabled; university-issued account provisioning, temporary-password resets and scoped roles are administered separately. Leave coordinators review requests; HOD/dean/leadership record approval decisions.
 
 Before a public rollout, replace demonstration organization/templates with approved school policy, configure HTTPS and operational rate limits, arrange database/file backups and recovery, and perform institutional security and user-acceptance review. Passing the automated suite is not a production-readiness certification.
 
 Excluded integrations from the specification remain excluded: Microsoft/Teams, registrar/finance, Turnitin API, calendars, email/SMS/WhatsApp, browser push, billing, and AI academic decisions.
+
+## Deferred integrations
+
+ERP/SSO, outbound email and external department delivery remain deferred by request. The local login represents a university-issued account but is not a live ERP login. No production email credentials or external messaging integrations have been added.

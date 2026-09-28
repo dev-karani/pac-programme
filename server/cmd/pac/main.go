@@ -51,8 +51,12 @@ func main() {
 	if err := db.PingContext(ctx); err != nil {
 		log.Fatal("database: ", err)
 	}
-	if len(os.Args) > 1 && os.Args[1] == "seed" {
-		if _, err := db.ExecContext(ctx, seed.SQL); err != nil {
+	if len(os.Args) > 1 && (os.Args[1] == "seed" || os.Args[1] == "seed-pitch") {
+		query := seed.SQL
+		if os.Args[1] == "seed-pitch" {
+			query = seed.PitchSQL
+		}
+		if _, err := db.ExecContext(ctx, query); err != nil {
 			log.Fatal("seed: ", err)
 		}
 		log.Println("demo data seeded")
@@ -60,18 +64,20 @@ func main() {
 		if err := os.MkdirAll(dir, 0700); err != nil {
 			log.Fatal(err)
 		}
-		file, err := os.OpenFile(filepath.Join(dir, "demo-examination-package"), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
-		if err == nil {
-			_, err = file.Write(seed.DemoDocument)
-			file.Close()
-			if err != nil {
+		for _, key := range []string{"demo-examination-package", "demo-concept-document"} {
+			file, err := os.OpenFile(filepath.Join(dir, key), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+			if err == nil {
+				_, err = file.Write(seed.DemoDocument)
+				file.Close()
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else if !os.IsExist(err) {
 				log.Fatal(err)
 			}
-		} else if !os.IsExist(err) {
-			log.Fatal(err)
-		}
-		if _, err := db.ExecContext(ctx, `UPDATE submission_versions SET size_bytes=$1 WHERE storage_key='demo-examination-package'`, len(seed.DemoDocument)); err != nil {
-			log.Fatal(err)
+			if _, err := db.ExecContext(ctx, `UPDATE submission_versions SET size_bytes=$1 WHERE storage_key IN('demo-examination-package','demo-concept-document')`, len(seed.DemoDocument)); err != nil {
+				log.Fatal(err)
+			}
 		}
 		return
 	}
@@ -82,7 +88,7 @@ func main() {
 	go a.reminderLoop()
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/v1/auth/login", a.login)
-	mux.HandleFunc("POST /api/v1/auth/signup", a.signup)
+	mux.HandleFunc("POST /api/v1/auth/signup", a.provisionedOnly)
 	mux.HandleFunc("GET /api/v1/auth/programmes", a.catalog)
 	mux.HandleFunc("POST /api/v1/auth/logout", a.withAuth(a.logout))
 	mux.HandleFunc("GET /api/v1/me", a.withAuth(a.me))

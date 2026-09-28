@@ -1,25 +1,9 @@
 import {test,expect} from '@playwright/test'
-
-for(const pathway of ['new','continuing']) test(`${pathway} student can register, sign in and track pending verification`,async({page})=>{
- const suffix=Date.now()+'-'+pathway,email=`registration-${suffix}@demo.pac.test`
- await page.goto('/');await page.getByRole('button',{name:'Create student account'}).click()
- await page.getByLabel('Full name',{exact:true}).fill('Registration '+pathway)
- await page.getByLabel('University email').fill(email)
- await page.getByLabel('Student admission number').fill('PAC-'+suffix)
- await page.getByLabel('Student pathway').selectOption(pathway)
- await page.getByLabel('Programme',{exact:true}).selectOption('30000000-0000-0000-0000-000000000001')
- await page.getByLabel('Cohort',{exact:true}).selectOption('40000000-0000-0000-0000-000000000001')
- await page.getByLabel('Admission date').fill('2026-01-12')
- await page.getByLabel('Create password').fill('Registration123!')
- await page.getByLabel('Confirm password').fill('Registration123!')
- await page.getByRole('button',{name:'Submit registration'}).click()
- await expect(page.getByRole('status')).toContainText('Account created')
- await page.getByRole('button',{name:'Back to sign in'}).click()
- await page.getByLabel('Email address').fill(email);await page.getByLabel('Password',{exact:true}).fill('Registration123!')
- await page.getByRole('button',{name:'Sign in',exact:true}).click()
- await page.getByRole('button',{name:'My journey',exact:true}).click()
- await expect(page.getByText('Your plan will appear after enrolment verification.')).toBeVisible()
- await expect(page.getByLabel('Role view').locator('option')).toHaveCount(1)
- await page.getByRole('button',{name:'My enrolment',exact:true}).click()
- await expect(page.getByRole('heading',{name:'Registration '+pathway,exact:true})).toBeVisible()
+test('university-issued login replaces public registration',async({page,request})=>{
+ await page.goto('/');await expect(page.getByRole('button',{name:'Create student account'})).toHaveCount(0)
+ await expect(page.getByText('Accounts are issued by university IT.',{exact:false})).toBeVisible()
+ const response=await request.post('/api/v1/auth/signup',{data:{Name:'Unauthorized account'}});expect(response.status()).toBe(403)
+ await page.getByLabel('Email address').fill('newstudent@demo.pac.test');await page.getByLabel('Password',{exact:true}).fill('Demo123!Change');await page.getByRole('button',{name:'Sign in',exact:true}).click()
+ await expect(page.getByRole('button',{name:'Choose supervisor'})).toBeVisible()
+ await page.getByRole('button',{name:'My journey',exact:true}).click();await expect(page.locator('.journey-stage')).toHaveCount(4)
 })

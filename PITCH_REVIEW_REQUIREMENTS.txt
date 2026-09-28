@@ -1,0 +1,163 @@
+PAC POSTGRADUATE PLATFORM — CONSOLIDATED PITCH REVIEW
+Recorded: 28 September 2026
+
+Sources: the user's pitch feedback and /home/dev-karani/Desktop/reviews.
+New branding asset: /home/dev-karani/Desktop/Primary Logo.png.
+This file records the original requested changes. See README.md for implementation details.
+Follow-up direction: implement local university-issued login and in-app notifications;
+ERP/SSO and outbound email/external department delivery are explicitly deferred.
+The revised direction supersedes public student signup as the main entry flow.
+
+1. SIMPLIFY ENTRY: UNIVERSITY-PROVISIONED ACCOUNTS
+The university ERP and IT team handle admission and account provisioning.
+Students should arrive with a university-issued identity and simply sign in,
+or enter through university single sign-on once that integration is agreed.
+Remove public student account creation and repeated onboarding from the normal
+student experience. Do not make students re-enter details the ERP already owns.
+Keep a clearly labelled local demonstration login until real integration exists.
+Existing users should return directly to their current research position.
+Continuing students must retain verified prior progress; no forced restart.
+Provisioning must establish programme, cohort, study mode, roles and scope.
+Do not silently delete existing records when retiring the old signup flow.
+
+2. SUPERVISION FIRST, THEN THE JOURNEY
+For a student without a confirmed supervisor, prominently show requesting
+supervision as the next action. The Supervision tab should show eligible people,
+request status, acceptance/confirmation and the final assigned supervisor(s).
+Make it obvious who the student received and what they should do next.
+Preserve capacity, eligibility and authorization checks and assignment history.
+Dean, HOD and other authorized academic staff handle confirmations and decisions
+within their scopes, including supervision, leave/extensions and interventions.
+Confirm the university's primary/secondary supervision rules before changing
+the existing two-position allocation policy.
+
+3. REPLACE THE LOGO
+Use the supplied horizontal Primary Logo.png in the appropriate branding areas.
+Preserve aspect ratio and readable university lettering on desktop and mobile.
+Check sign-in, header and mobile navigation; avoid squeezing the full wordmark
+into a tiny square. Make an explicit suitable favicon choice.
+
+4. STAFF DASHBOARDS: SUBTLE, MEANINGFUL SIGNALS
+Retain the neat layout, but add restrained visual signals to metrics such as
+overdue reviews and students awaiting allocation. Lower overdue counts are
+better; elevated counts should visibly indicate attention is needed.
+Use text as well as colour, with agreed thresholds rather than arbitrary alarm.
+Improve progress-by-department summaries so the progress is easier to interpret.
+Do not add decoration where it does not convey useful information.
+
+5. GROUP STAFF MILESTONES BY STUDENT
+Replace scattered milestone cards with student cards sorted alphabetically.
+Show identity, current research context and a compact progress-percentage circle.
+Allow each card to expand into that student's milestones, statuses and relevant
+concept/topic information. Each milestone must still open its full record.
+Keep all results restricted to the viewer's assigned academic scope.
+
+6. REALISTIC, CONNECTED DEMONSTRATION CONTENT
+Provide explicitly fictional but realistic IT-related research tasks for the
+demo student, including preparing and submitting a first research concept.
+Include useful resource guidance, potentially referring to Agenda 2063 where
+academically relevant. Verify resource links and do not present example guidance
+as official university policy.
+Show a believable mixture of completed, current and future work. Completed
+tasks should have readable completion states and green checks.
+Populate relevant resources, comments, submissions, review feedback and
+notifications so a presenter can demonstrate the experience without empty pages.
+Use genuine linked demo records, not hard-coded visual completion labels.
+Make student actions and their resulting staff records visible across accounts.
+Preserve existing data; additions should be safe to repeat without duplicates.
+
+7. RESEARCH CONCEPT HISTORY
+Show the different concepts or concept versions submitted by the student.
+Clearly distinguish approved, declined and changes-requested outcomes; use an
+X for declined and a positive marker for approved, with text labels as well.
+Do not label a request for revisions as a final rejection.
+Show reviewer, decision date/time, feedback and the exact version reviewed.
+Prefill illustrative concept outcomes in demo data and show the same history
+in authorized dean/staff views as neat, readable cards.
+
+8. SUBMISSION COMMENTS AND CHAT-LIKE DISCUSSIONS
+Place a conversation thread directly after submissions within the milestone.
+Students and authorized staff should be able to read and reply, with author,
+timestamp and submission/version context retained.
+Make new replies discoverable through notifications and appropriate email alerts.
+Support referral/escalation to an authorized colleague with recorded ownership
+and history; clarify whether 'transfer' means reassignment, mention or referral.
+Do not grant all senior staff unrestricted access to every conversation.
+Keep restricted welfare discussions separate from ordinary academic comments.
+Define and test how updates appear (refresh/polling or real-time delivery),
+including unread state, failed sends, retry behaviour and duplicate prevention.
+
+9. ACTIONABLE NEXT-ACTION OWNER
+Show the person or department actually responsible for clearing the delay.
+If a review is late, identify the responsible reviewer; if a submission is
+pending, identify the student. Administrative issues can name IT, finance or
+another configured department as appropriate.
+Make the owner/contact control open a small message composer with recipient
+and context preselected. The staff member reviews and sends the message.
+Internal recipients should receive an in-app notification and configured email;
+external departmental contacts may receive email without needing a portal account.
+Show delivery state accurately: queued, sent to provider or failed, rather than
+claiming delivery simply because the message was saved.
+Record sender, recipient, context and follow-up history. Use authorized contact
+data and prevent arbitrary bulk mail or exposure of private case information.
+
+10. NOTIFICATIONS AND EMAIL
+Verify end-to-end in-app notifications for comments, assigned actions, due work,
+overdue reviews and relevant academic/support decisions.
+Add actual outbound email through an approved provider or SMTP configuration.
+Support periodic reminders/digests for students and relevant dean/staff users,
+with agreed recipients, frequency and escalation rules.
+Use durable delivery jobs, retry handling and duplicate suppression. Avoid
+repeated alerts for already completed work or approved leave.
+Keep sensitive narrative content out of email; prefer safe summaries and links.
+Test with a local mail capture service or approved test inbox before live use.
+Fictional demo addresses must never be used to demonstrate real email delivery.
+Provider acceptance is not proof of inbox delivery; report only verified state.
+
+11. LEAVE AND EXTENSIONS
+Investigate and fix the leave/extension experience end to end: student request,
+authorized staff review, approval/decline, feedback and reflected schedule changes.
+Ensure requests open correctly and permitted actions are clear at every state.
+Pending requests must not alter deadlines. Approved changes must preserve
+original dates, reasons and decision history. Confirm return-from-leave handling.
+Check deadline flags, reports and reminders against the resulting schedule.
+The feedback did not identify a specific failing case; reproduce and test before
+claiming a particular root cause.
+
+12. ERP AND OTHER INTEGRATIONS — INFORMATION REQUIRED
+ERP product/vendor, test environment and university technical contact.
+Authentication method (for example OIDC/SAML) versus data synchronization method
+(API, webhook or controlled import); these are separate integration concerns.
+Approved account/student identifiers, field mappings, role/scope ownership,
+account disablement, continuing-student progress and synchronization policies.
+API documentation, authorized credentials, callback details and sample test data.
+Approved email provider, sender identity, domain configuration and test recipients.
+Actual contact addresses for departments such as IT and finance.
+An explicit list of 'other integrations' and desired outcomes before expanding
+scope to calendars, Teams, Turnitin, SMS or similar services.
+Never simulate a successful ERP or external-service connection in the UI.
+Request credentials through secure configuration, not this requirements file.
+
+13. PROPOSED IMPLEMENTATION ORDER
+First: branding, simplified login presentation, supervision-first guidance,
+student-grouped staff milestones and restrained dashboard status indicators.
+Second: concept history, linked demo content, comments and request-flow fixes.
+Third: accountable follow-up messaging and verified in-app notification behaviour.
+Fourth: configured email delivery and university-approved ERP integration,
+followed by any separately agreed integrations.
+Keep local demonstrability distinct from production integration readiness.
+
+14. ACCEPTANCE WALKTHROUGH
+A provisioned new student signs in without public registration, requests a
+supervisor, sees the request accepted and confirmed, then proceeds with research.
+A returning student resumes the correct stage with prior work intact.
+Student concepts and submissions appear to the right supervisor and academic
+managers with accurate version, reviewer and decision history.
+A comment appears in the correct thread and notifies the permitted recipient.
+A staff member follows up with the next action owner through the composer;
+the recipient receives the in-app message and, when configured, a test email.
+Staff can expand an alphabetically grouped student card and open a milestone.
+An approved leave/extension updates the schedule, flags and reports consistently.
+Restricted records remain inaccessible to unauthorized accounts.
+Desktop and mobile flows work, including empty/loading/error and failed-send cases.
+Run automated regression checks with a disposable database, preserving demo data.

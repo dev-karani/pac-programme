@@ -9,3 +9,8 @@ var SQL string
 
 //go:embed demo.pdf
 var DemoDocument []byte
+
+// PitchSQL adds optional fictional pitch examples without resetting existing progress.
+//
+//go:embed pitch.sql
+var PitchSQL string

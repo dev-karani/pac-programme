@@ -50,3 +50,37 @@
 @media(max-width:480px){.student-journey-page .journey-content-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;overflow:visible}.student-journey-page .journey-content-tabs button{flex-direction:column;justify-content:center;gap:6px;font-size:.7rem;padding:12px 0}.student-journey-page .journey-content-tabs button svg{width:16px;height:16px}}
 @media(max-width:1100px){.student-overview-grid{grid-template-columns:1fr}.deadline-totals{max-width:400px}.student-journey-layout{grid-template-columns:225px minmax(0,1fr)}.student-milestone-panel{padding:24px}.journey-content-tabs{gap:16px}.student-task-row{flex-wrap:wrap}.student-task-row>button{margin-left:47px}.student-section-heading h2{font-size:1.2rem}}
 @media(max-width:760px){.student-surface{padding:21px}.student-journey-layout{display:block;min-height:0}.student-journey-sidebar{display:none}.journey-mobile-picker{display:grid;gap:8px;margin:0 0 15px;font-size:.78rem;font-weight:600}.journey-mobile-picker select{width:100%;min-width:0;padding:13px 10px;border:1px solid #d2dfd4;border-radius:9px;background:white;font:inherit;color:#34503e}.student-milestone-panel{padding:21px 17px}.student-milestone-panel>h2{font-size:1.65rem}.student-track li{flex-basis:118px}.student-overview>section{margin-top:22px}.student-deadline-row{padding:17px 15px;gap:12px;flex-wrap:wrap}.student-deadline-row>button{margin-left:57px}.deadline-copy h3{font-size:.85rem}.student-section-heading{gap:12px}.student-section-heading>.text-button{padding:0}.progress-summary{gap:15px}.student-progress-ring{width:78px;height:78px}.progress-summary strong{font-size:.87rem}.student-actions{gap:10px}.student-actions button{font-size:.75rem}.student-resource-row{flex-wrap:wrap}.student-resource-row>.button-link{margin-left:35px}.student-overview .student-notice{margin-bottom:0}.journey-content-tabs{gap:20px}.journey-content-tabs button{font-size:.73rem}.journey-content-tabs button svg{width:14px}.record-card{padding:20px;gap:12px}.record-grid{grid-template-columns:minmax(0,1fr)}.student-journey-layout .student-section-heading .status-pill{font-size:.62rem}.student-journey-page .milestone-date-row{font-size:.7rem}}
+
+/* Pitch review: restrained signals and readable horizontal university identity. */
+.pac-logo{width:190px;height:auto;max-height:68px;object-fit:contain;padding:4px}
+.login-brand .pac-logo{width:min(380px,100%);padding:12px}
+.mobile-mark .pac-logo{width:250px;max-width:100%;max-height:none}
+.mobile-aside-head .pac-logo{width:210px;max-height:none}
+.provisioned-note{font-size:.87rem;line-height:1.6;color:var(--muted);margin:22px 0}
+.metric-good{border-top:3px solid #237553}.metric-danger{border-top:3px solid #b73d36;background:#fff7f6}.metric-warning{border-top:3px solid #c68d23;background:#fffbf1}
+.metric-danger b{color:#9e302b}.metric-warning b{color:#956300}
+.group-progress{display:grid;gap:8px;font-size:.8rem;color:#53675c}
+.group-progress progress{width:100%;height:8px;accent-color:#17664f}
+.student-group{margin-bottom:16px;display:block}
+.student-group summary{display:flex;align-items:center;gap:16px;cursor:pointer;list-style:none}
+.student-group summary small{display:block;line-height:1.6;margin-top:5px;color:var(--muted)}
+.compact-ring{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;flex:none}
+.compact-ring>span{width:46px;height:46px;border-radius:50%;background:white;display:grid;place-items:center;font-size:.8rem;font-weight:700}
+.expand-hint{margin-left:auto;color:#17664f;font-size:.8rem}
+.student-group[open] summary{margin-bottom:20px}.group-milestones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.group-milestones .message{margin:0}.group-milestones h3{font-size:1rem}
+.notification-bell{position:relative}.notification-count{position:absolute;top:-3px;right:-6px;background:#ad332d;color:white;border-radius:20px;font-size:.65rem;min-width:18px;padding:2px 4px}
+.notification-card{margin-bottom:14px}.notification-card.unread{border-left:4px solid #17664f}
+.academic-discussion{margin-top:26px;padding-top:22px;border-top:1px solid #dfe4e1}
+.academic-discussion h3{display:flex;gap:8px;align-items:center}.discussion-messages{max-height:480px;overflow:auto;margin:20px 0}
+.discussion-messages .message{background:#f4f8f6;border:1px solid #dce8e0;border-radius:10px;padding:16px}
+.message small{display:block;margin:6px 0;color:var(--muted)}.preserve-lines{white-space:pre-wrap;overflow-wrap:anywhere}
+.supervision-first{align-items:center;justify-content:space-between;margin-bottom:20px}
+.page>label{display:grid;gap:8px;margin-bottom:22px}.page>label select{padding:12px;border:1px solid #ccd4d0;border-radius:8px;max-width:100%}
+.request-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}.request-facts div{padding:12px;background:#f5f8f6;border-radius:8px}.request-facts dt{font-size:.8rem;color:#65736b}.request-facts dd{margin:5px 0 0;font-weight:600}
+@media(max-width:950px){.shell header{grid-template-columns:auto 1fr auto}.shell header .pac-logo{width:160px}}
+@media(max-width:650px){.group-milestones{grid-template-columns:1fr}.student-group summary{gap:10px;flex-wrap:wrap}.expand-hint{margin-left:68px}.shell header .pac-logo{width:132px}.header-context{display:none}.shell header{gap:10px}.supervision-first{flex-direction:column;align-items:stretch}.request-facts{grid-template-columns:1fr}}
+
+.login-brand .wordmark{width:min(380px,100%)}
+.login-brand .pac-logo{width:100%;max-height:none}
+.discussion-referral{margin-top:22px;padding:16px;border:1px solid #dce8e0;border-radius:8px}.discussion-referral summary{cursor:pointer;color:#17664f;font-weight:600}

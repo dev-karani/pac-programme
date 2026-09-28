@@ -913,6 +913,10 @@ func (a *app) decideLeave(w http.ResponseWriter, r *http.Request) {
 			_, err = tx.ExecContext(r.Context(), `UPDATE milestone_instances mi SET current_start=current_start+$2::integer,current_due=current_due+$2::integer,version=version+1 FROM student_plans sp WHERE mi.plan_id=sp.id AND sp.enrolment_id=$1 AND mi.state NOT IN('approved') AND mi.current_due>=$3`, enrolment, days, start)
 		}
 		if err == nil {
+			_, err = tx.ExecContext(r.Context(), `UPDATE activity_instances ai SET current_due=ai.current_due+(ri.new_due-ri.old_due)*interval '1 day',version=ai.version+1 FROM schedule_revision_items ri WHERE ri.revision_id=$1 AND ri.milestone_id=ai.milestone_id AND ai.state<>'approved'`, revision)
+		}
+
+		if err == nil {
 			_, err = tx.ExecContext(r.Context(), `UPDATE notifications SET dismissed_at=now() WHERE recipient_id=(SELECT student_id FROM enrolments WHERE id=$1) AND dedupe_key LIKE 'deadline:%'`, enrolment)
 		}
 		if err == nil {
@@ -947,7 +951,7 @@ func (a *app) requestExtension(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var id string
-	err := a.db.QueryRowContext(r.Context(), `INSERT INTO extension_requests(enrolment_id,milestone_id,requested_by,old_date,requested_date,reason) SELECT e.id,mi.id,$1,mi.current_due,$3,$4 FROM milestone_instances mi JOIN student_plans sp ON sp.id=mi.plan_id JOIN enrolments e ON e.id=sp.enrolment_id WHERE mi.id=$2 AND (e.student_id=$1 OR EXISTS(SELECT 1 FROM supervision_assignments sa WHERE sa.enrolment_id=e.id AND sa.supervisor_id=$1 AND sa.effective_to IS NULL)) RETURNING id`, u.ID, in.MilestoneID, in.RequestedDate, in.Reason).Scan(&id)
+	err := a.db.QueryRowContext(r.Context(), `INSERT INTO extension_requests(enrolment_id,milestone_id,requested_by,old_date,requested_date,reason) SELECT e.id,mi.id,$1,mi.current_due,$3,$4 FROM milestone_instances mi JOIN student_plans sp ON sp.id=mi.plan_id JOIN enrolments e ON e.id=sp.enrolment_id WHERE mi.id=$2 AND mi.state<>'approved' AND e.state='active' AND NOT EXISTS(SELECT 1 FROM extension_requests prior WHERE prior.milestone_id=mi.id AND prior.state IN('pending','escalated')) AND (e.student_id=$1 OR EXISTS(SELECT 1 FROM supervision_assignments sa WHERE sa.enrolment_id=e.id AND sa.supervisor_id=$1 AND sa.effective_to IS NULL)) RETURNING id`, u.ID, in.MilestoneID, in.RequestedDate, in.Reason).Scan(&id)
 	if err != nil {
 		problem(w, 400, "Extension not requested", "The new date must be later than the current date.")
 		return
@@ -968,11 +972,15 @@ func (a *app) decideExtension(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &in) {
 		return
 	}
+	if (in.Decision != "approved" && in.Decision != "declined") || len(strings.TrimSpace(in.Reason)) < 8 {
+		problem(w, 400, "Invalid decision", "Approve or decline with a reason of at least 8 characters.")
+		return
+	}
 	tx, _ := a.db.BeginTx(r.Context(), nil)
 	defer tx.Rollback()
 	var mid, enrolment string
 	var old, new time.Time
-	err := tx.QueryRowContext(r.Context(), `UPDATE extension_requests SET state=$2,decision_reason=$3,decided_by=$4,decided_at=now() WHERE id=$1 AND state IN('pending','escalated') RETURNING milestone_id,enrolment_id,old_date,requested_date`, r.PathValue("id"), in.Decision, in.Reason, u.ID).Scan(&mid, &enrolment, &old, &new)
+	err := tx.QueryRowContext(r.Context(), `UPDATE extension_requests SET state=$2,decision_reason=$3,decided_by=$4,decided_at=now() WHERE id=$1 AND state IN('pending','escalated') AND ($2='declined' OR EXISTS(SELECT 1 FROM milestone_instances mi WHERE mi.id=extension_requests.milestone_id AND mi.state<>'approved' AND mi.current_due=extension_requests.old_date)) RETURNING milestone_id,enrolment_id,old_date,requested_date`, r.PathValue("id"), in.Decision, in.Reason, u.ID).Scan(&mid, &enrolment, &old, &new)
 	if err == nil && in.Decision == "approved" {
 		var revision string
 		err = tx.QueryRowContext(r.Context(), `INSERT INTO plan_revisions(plan_id,source_type,source_id,reason,approved_by) SELECT plan_id,'extension',$2,$3,$4 FROM milestone_instances WHERE id=$1 RETURNING id`, mid, r.PathValue("id"), in.Reason, u.ID).Scan(&revision)
@@ -985,6 +993,10 @@ func (a *app) decideExtension(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			_, err = tx.ExecContext(r.Context(), `UPDATE action_tasks SET due_at=due_at+($2::date-$3::date)*interval '1 day' WHERE milestone_id=$1 AND state='open' AND owner_id=(SELECT student_id FROM enrolments WHERE id=$4)`, mid, new, old, enrolment)
 		}
+		if err == nil {
+			_, err = tx.ExecContext(r.Context(), `UPDATE activity_instances SET current_due=current_due+($2::date-$3::date)*interval '1 day',version=version+1 WHERE milestone_id=$1 AND state<>'approved'`, mid, new, old)
+		}
+
 		if err == nil {
 			_, err = tx.ExecContext(r.Context(), `UPDATE notifications SET dismissed_at=now() WHERE dedupe_key IN(SELECT 'deadline:'||id FROM action_tasks WHERE milestone_id=$1)`, mid)
 		}
@@ -1283,22 +1295,10 @@ func (a *app) verifyCorrection(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *app) notifications(w http.ResponseWriter, r *http.Request) {
-	u := current(r)
-	rows, err := a.db.QueryContext(r.Context(), `SELECT id,title,urgency,read_at,dismissed_at,updated_at FROM notifications WHERE recipient_id=$1 ORDER BY dismissed_at NULLS FIRST,updated_at DESC LIMIT 100`, u.ID)
-	if err != nil {
-		problem(w, 500, "Notifications unavailable", "Try again.")
-		return
-	}
-	defer rows.Close()
-	out := []map[string]any{}
-	for rows.Next() {
-		var id, t, urg string
-		var read, dismiss sql.NullTime
-		var updated time.Time
-		rows.Scan(&id, &t, &urg, &read, &dismiss, &updated)
-		out = append(out, map[string]any{"id": id, "title": t, "urgency": urg, "read": read.Valid, "dismissed": dismiss.Valid, "updatedAt": updated})
-	}
-	writeJSON(w, 200, out)
+	a.sendRows(w, r, `SELECT id,title,body,urgency,read_at IS NOT NULL AS read,dismissed_at IS NOT NULL AS dismissed,updated_at AS "updatedAt",milestone_id,CASE WHEN target_view<>'' THEN target_view WHEN dedupe_key LIKE 'concept%' THEN 'concepts' WHEN dedupe_key LIKE 'submission:%' OR dedupe_key LIKE 'review-deadline:%' THEN 'reviews' WHEN dedupe_key LIKE 'review:%' OR dedupe_key LIKE 'deadline:%' THEN 'journey' ELSE '' END AS target_view FROM notifications n WHERE recipient_id=$1
+ AND (dedupe_key NOT LIKE 'deadline:%' AND dedupe_key NOT LIKE 'assigned-task:%' OR EXISTS(SELECT 1 FROM action_tasks t JOIN enrolments e ON e.id=t.enrolment_id WHERE (n.dedupe_key='deadline:'||t.id OR n.dedupe_key='assigned-task:'||t.id) AND t.state='open' AND NOT(e.state='approved_leave' AND t.owner_id=e.student_id)))
+ AND (dedupe_key NOT LIKE 'review-deadline:%' OR EXISTS(SELECT 1 FROM review_assignments ra WHERE n.dedupe_key='review-deadline:'||ra.id AND ra.state='awaiting_review' AND NOT ra.round_closed))
+ ORDER BY dismissed_at NULLS FIRST,updated_at DESC LIMIT 100`, current(r).ID)
 }
 func (a *app) dismissNotification(w http.ResponseWriter, r *http.Request) {
 	u := current(r)
@@ -1347,7 +1347,7 @@ func (a *app) processReminders(ctx context.Context) (int64, error) {
 	if res != nil {
 		n, _ = res.RowsAffected()
 	}
-	_, err = tx.ExecContext(ctx, `INSERT INTO notifications(recipient_id,dedupe_key,title,urgency,updated_at) SELECT ra.user_id,'escalation:'||at.id||':'||ra.role,'Overdue follow-up: '||at.title,'overdue',now() FROM action_tasks at JOIN enrolments e ON e.id=at.enrolment_id JOIN programmes p ON p.id=e.programme_id JOIN role_assignments ra ON (at.due_at<=now()-COALESCE((SELECT (settings->>'hodEscalationDays')::int FROM institution_settings LIMIT 1),14)*interval '1 day' AND ra.role='hod' AND ra.scope_type='department' AND ra.scope_id=p.department_id) OR (at.due_at<=now()-COALESCE((SELECT (settings->>'coordinatorEscalationDays')::int FROM institution_settings LIMIT 1),7)*interval '1 day' AND ra.role='coordinator' AND ra.scope_type='programme' AND ra.scope_id=p.id) WHERE at.state='open' AND at.due_at<now()-COALESCE((SELECT (settings->>'coordinatorEscalationDays')::int FROM institution_settings LIMIT 1),7)*interval '1 day' ON CONFLICT(recipient_id,dedupe_key) DO UPDATE SET title=excluded.title,urgency=excluded.urgency,updated_at=now()`)
+	_, err = tx.ExecContext(ctx, `INSERT INTO notifications(recipient_id,dedupe_key,title,urgency,updated_at) SELECT ra.user_id,'escalation:'||at.id||':'||ra.role,'Overdue follow-up: '||at.title,'overdue',now() FROM action_tasks at JOIN enrolments e ON e.id=at.enrolment_id JOIN programmes p ON p.id=e.programme_id JOIN role_assignments ra ON (at.due_at<=now()-COALESCE((SELECT (settings->>'hodEscalationDays')::int FROM institution_settings LIMIT 1),14)*interval '1 day' AND ra.role='hod' AND ra.scope_type='department' AND ra.scope_id=p.department_id) OR (at.due_at<=now()-COALESCE((SELECT (settings->>'coordinatorEscalationDays')::int FROM institution_settings LIMIT 1),7)*interval '1 day' AND ra.role='coordinator' AND ra.scope_type='programme' AND ra.scope_id=p.id) WHERE at.state='open' AND NOT(e.state='approved_leave' AND at.owner_id=e.student_id) AND at.due_at<now()-COALESCE((SELECT (settings->>'coordinatorEscalationDays')::int FROM institution_settings LIMIT 1),7)*interval '1 day' ON CONFLICT(recipient_id,dedupe_key) DO UPDATE SET title=excluded.title,urgency=excluded.urgency,updated_at=now()`)
 	if err != nil {
 		return 0, err
 	}

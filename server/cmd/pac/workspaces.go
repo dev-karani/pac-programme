@@ -64,6 +64,7 @@ func commitResponse(w http.ResponseWriter, tx *sql.Tx, err error, v any) {
 }
 func (a *app) registerWorkspaceRoutes(m *http.ServeMux) {
 	routes := map[string]http.HandlerFunc{
+		"GET /api/v1/enrolments/{id}/contacts": a.followupRecipients, "GET /api/v1/enrolments/{id}/followups": a.followups, "POST /api/v1/enrolments/{id}/followups": a.sendFollowup, "POST /api/v1/notifications/{id}/read": a.readNotification,
 		"GET /api/v1/workspace/students": a.workspaceStudents, "GET /api/v1/workspace/reports": a.workspaceReports,
 		"GET /api/v1/concepts": a.concepts, "POST /api/v1/concepts": a.submitConcept, "POST /api/v1/concepts/{id}/decision": a.decideConcept,
 		"GET /api/v1/cases/{id}": a.caseDetail, "POST /api/v1/cases/{id}/message": a.caseMessage, "POST /api/v1/cases/{id}/manage": a.caseManage,
@@ -85,7 +86,7 @@ const studentReport = `SELECT e.id,e.student_id,st.full_name AS student,st.stude
  (SELECT count(*) FROM review_assignments ra JOIN submission_versions sv ON sv.id=ra.submission_version_id JOIN submissions s ON s.id=sv.submission_id WHERE s.student_id=e.student_id AND ra.state='awaiting_review' AND ra.due_at<now()) AS overdue_reviews,
  (SELECT count(*) FROM support_cases sc WHERE sc.enrolment_id=e.id AND sc.status<>'resolved') AS open_cases,
  (SELECT max(actual_at) FROM meetings WHERE enrolment_id=e.id AND state='held') AS last_meeting,
- (SELECT string_agg(DISTINCT u.full_name,', ') FROM action_tasks t JOIN users u ON u.id=t.owner_id WHERE t.enrolment_id=e.id AND t.state='open') AS next_action_owner,
+ (SELECT string_agg(DISTINCT owners.name,', ') FROM (SELECT u.full_name AS name FROM action_tasks t JOIN users u ON u.id=t.owner_id WHERE t.enrolment_id=e.id AND t.state='open' UNION SELECT reviewer.full_name FROM review_assignments ra JOIN users reviewer ON reviewer.id=ra.reviewer_id JOIN submission_versions sv ON sv.id=ra.submission_version_id JOIN submissions sub ON sub.id=sv.submission_id JOIN milestone_instances mi ON mi.id=sub.milestone_id JOIN student_plans plan ON plan.id=mi.plan_id WHERE plan.enrolment_id=e.id AND ra.state='awaiting_review' AND NOT ra.round_closed) owners) AS next_action_owner,
  (SELECT string_agg(DISTINCT md.stage_label,', ') FROM student_plans sp JOIN milestone_instances mi ON mi.plan_id=sp.id JOIN milestone_definitions md ON md.id=mi.definition_id WHERE sp.enrolment_id=e.id AND mi.state IN('in_progress','awaiting_review','changes_requested')) AS stage,
  (SELECT count(*) FROM student_plans sp JOIN milestone_instances mi ON mi.plan_id=sp.id WHERE sp.enrolment_id=e.id AND mi.state IN('in_progress','changes_requested') AND mi.current_due<current_date AND e.state='active') AS overdue_milestones
  FROM enrolments e JOIN users st ON st.id=e.student_id JOIN programmes p ON p.id=e.programme_id JOIN departments d ON d.id=p.department_id JOIN schools sch ON sch.id=d.school_id JOIN cohorts c ON c.id=e.cohort_id WHERE ` + academicScope
@@ -272,7 +273,7 @@ func (a *app) caseMessage(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &in) {
 		return
 	}
-	if len(strings.TrimSpace(in.Body)) < 2 {
+	if len(strings.TrimSpace(in.Body)) < 2 || len(in.Body) > 4000 {
 		problem(w, 400, "Message required", "Enter your reply.")
 		return
 	}
@@ -429,8 +430,8 @@ func (a *app) workspaceReviews(w http.ResponseWriter, r *http.Request) {
 }
 func (a *app) requestQueue(w http.ResponseWriter, r *http.Request) {
 	u := current(r)
-	leaves, _ := a.jsonRows(r.Context(), `SELECT lr.id,lr.enrolment_id,lr.start_date,lr.end_date,lr.proposed_return_date,lr.reason_category,lr.state,lr.decision_reason,u.full_name AS student FROM leave_requests lr JOIN enrolments e ON e.id=lr.enrolment_id JOIN users u ON u.id=e.student_id JOIN programmes p ON p.id=e.programme_id JOIN departments d ON d.id=p.department_id WHERE `+academicScope+` ORDER BY lr.requested_at DESC`, u.ID)
-	extensions, _ := a.jsonRows(r.Context(), `SELECT er.*,u.full_name AS student FROM extension_requests er JOIN enrolments e ON e.id=er.enrolment_id JOIN users u ON u.id=e.student_id JOIN programmes p ON p.id=e.programme_id JOIN departments d ON d.id=p.department_id WHERE `+academicScope+` ORDER BY er.requested_date DESC`, u.ID)
+	leaves, _ := a.jsonRows(r.Context(), `SELECT lr.id,lr.enrolment_id,lr.start_date,lr.end_date,lr.proposed_return_date,lr.reason_category,lr.state,lr.decision_reason,lr.decided_at,(SELECT full_name FROM users WHERE id=lr.decided_by) AS decider,u.full_name AS student FROM leave_requests lr JOIN enrolments e ON e.id=lr.enrolment_id JOIN users u ON u.id=e.student_id JOIN programmes p ON p.id=e.programme_id JOIN departments d ON d.id=p.department_id WHERE `+academicScope+` ORDER BY lr.requested_at DESC`, u.ID)
+	extensions, _ := a.jsonRows(r.Context(), `SELECT er.*,(SELECT md.title FROM milestone_instances mi JOIN milestone_definitions md ON md.id=mi.definition_id WHERE mi.id=er.milestone_id) AS milestone,(SELECT full_name FROM users WHERE id=er.decided_by) AS decider,u.full_name AS student FROM extension_requests er JOIN enrolments e ON e.id=er.enrolment_id JOIN users u ON u.id=e.student_id JOIN programmes p ON p.id=e.programme_id JOIN departments d ON d.id=p.department_id WHERE `+academicScope+` ORDER BY er.requested_date DESC`, u.ID)
 	writeJSON(w, 200, map[string]any{"leave": leaves, "extensions": extensions})
 }
 func (a *app) workspacePeople(w http.ResponseWriter, r *http.Request) {

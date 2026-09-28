@@ -25,7 +25,6 @@ function App(){
 }
 
 function Login({onLogin}:{onLogin:(u:Me)=>void}){
- const [register,setRegister]=useState(false)
  const [email,setEmail]=useState('student@demo.pac.test'),[password,setPassword]=useState('Demo123!Change'),[error,setError]=useState(''),[busy,setBusy]=useState(false)
  async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');try{onLogin(await api('/api/v1/auth/login',{method:'POST',body:JSON.stringify({email,password})}))}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  return <main className="login-page">
@@ -34,7 +33,7 @@ function Login({onLogin}:{onLogin:(u:Me)=>void}){
      <div className="brand-copy"><p className="eyebrow">Postgraduate progress</p><h1>A clear path through your research journey.</h1><p>See what needs your attention, collaborate with supervisors, and keep every milestone in view.</p></div>
      <div className="brand-foot"><ShieldCheck/><span>Academic records protected by role-based access</span></div>
    </section>
-   <section className="login-panel">{register?<StudentSignup back={()=>setRegister(false)}/>:<form className="login-card" onSubmit={submit}>
+   <section className="login-panel">{<form className="login-card" onSubmit={submit}>
      <div className="mobile-mark wordmark"><img className="pac-logo" src="/pac-university-logo.png" alt="Pan Africa Christian University — Where Leaders are Made"/></div>
      <p className="eyebrow green">Welcome back</p><h2>Sign in to continue</h2><p className="muted">Use your university-issued account.</p>
      {error&&<div className="form-error" role="alert"><AlertCircle/> {error}</div>}
@@ -42,30 +41,10 @@ function Login({onLogin}:{onLogin:(u:Me)=>void}){
      <label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label>
      <button className="primary wide" disabled={busy}>{busy?<><span className="spinner small"/>Signing in…</>:'Sign in'}</button>
      <button type="button" className="text-button" onClick={()=>setError('Contact the system administrator for a temporary credential reset. Existing sessions will be revoked.')}>Forgot your password?</button>
-     <button type="button" className="secondary wide" onClick={()=>setRegister(true)}>Create student account</button>
+     <p className="provisioned-note">Accounts are issued by university IT. Your programme and research record are already linked. Need access? Contact your programme office.</p>
      <div className="demo-box"><strong>Demonstration account</strong><span>Student · student@demo.pac.test</span><span>Password · Demo123!Change</span></div>
    </form>}<p className="login-help"><CircleHelp/> Need help? Contact your programme office.</p></section>
  </main>
-}
-
-function StudentSignup({back}:{back:()=>void}) {
- const [catalog,setCatalog]=useState<any[]>([]),[programme,setProgramme]=useState(''),[error,setError]=useState(''),[success,setSuccess]=useState(''),[busy,setBusy]=useState(false)
- useEffect(()=>{api<any[]>('/api/v1/auth/programmes').then(setCatalog).catch(e=>setError(e.message))},[])
- async function submit(e:React.FormEvent<HTMLFormElement>){e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));setError('');if(v.Password!==v.Confirm){setError('Passwords do not match.');return}setBusy(true);try{const result=await api<{message:string}>('/api/v1/auth/signup',{method:'POST',body:JSON.stringify(v)});setSuccess(result.message)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
- return <form className="login-card" onSubmit={submit}><p className="eyebrow green">Student registration</p><h2>Create your student account</h2><p className="muted">For admitted new and continuing PAC postgraduate students. Staff accounts are issued by the administrator.</p>{error&&<p className="form-error" role="alert">{error}</p>}{success?<p role="status">{success}</p>:<>
- <label>Full name<input name="Name" autoComplete="name" required minLength={3} maxLength={200}/></label>
- <label>University email<input name="Email" type="email" autoComplete="email" required/></label>
- <label>Student admission number<input name="StudentNumber" required minLength={3} maxLength={80}/></label>
- <label>Student pathway<select aria-label="Student pathway" name="EntryPath" required><option value="new">New student — starting research</option><option value="continuing">Continuing student — research already in progress</option></select></label>
- <label>Programme<select aria-label="Programme" name="ProgrammeID" value={programme} onChange={e=>setProgramme(e.target.value)} required><option value="">Select programme</option>{Array.from(new Map(catalog.filter(c=>c.programme_id).map(c=>[c.programme_id,c])).values()).map(c=><option key={c.programme_id} value={c.programme_id}>{c.programme}</option>)}</select></label>
- <label>Cohort<select aria-label="Cohort" key={programme} name="CohortID" required defaultValue=""><option value="">Select cohort</option>{catalog.filter(c=>c.programme_id===programme&&c.cohort_id).map(c=><option key={c.cohort_id} value={c.cohort_id}>{c.cohort}</option>)}</select></label>
- <label>Study mode<select aria-label="Study mode" name="StudyMode" required><option value="full_time">Full time</option><option value="part_time">Part time</option></select></label>
- <label>Admission date<input name="AdmissionDate" type="date" required max={new Date().toISOString().slice(0,10)}/></label>
- <label>Create password<input name="Password" type="password" autoComplete="new-password" minLength={12} maxLength={72} required/></label>
- <label>Confirm password<input name="Confirm" type="password" autoComplete="new-password" minLength={12} maxLength={72} required/></label>
- <p className="muted">The programme office verifies your admission before activating your plan. Continuing students have prior milestones recorded with evidence; registration does not approve prior work.</p>
- <button className="primary wide" disabled={busy}>{busy?'Creating account…':'Submit registration'}</button></>}
- <button type="button" className="text-button" onClick={back}>Back to sign in</button></form>
 }
 
 export default App
